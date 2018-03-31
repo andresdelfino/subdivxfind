@@ -18,16 +18,17 @@ description_length = 75
 base = 'https://www.subdivx.com'
 search_url = f'{base}/index.php?accion=5&buscar={title}&masdesc=&idusuario=&nick=&oxfecha=&oxcd=&oxdown=&pg='
 
-page_n = 1
-
 comment_url_re = re.compile(r'popcoment\.php')
 download_url_re = re.compile(r'bajar\.php')
 
+no_results_message = 'No encontramos resultados con el buscador de subdivx'.encode('latin_1')
+
+page_n = 1
 while True:
     with urllib.request.urlopen(f'{search_url}{page_n}') as page:
         page_content = page.read()
 
-    if page_n == 1 and 'No encontramos resultados con el buscador de subdivx' in page_content.decode('latin_1'):
+    if page_n == 1 and no_results_message in page_content:
         print('No results.')
         break
 
