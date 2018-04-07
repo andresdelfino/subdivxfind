@@ -1,38 +1,46 @@
 import re
 import sys
-import urllib.parse
-import urllib.request
 
 import bs4
 import html5lib
+import requests
 
 title, release = sys.argv[1:3]
+release = release.casefold()
 
 engine = 'html5lib'
-
-title = urllib.parse.quote_plus(title)
-release = release.casefold()
 
 description_length = 75
 
 base = 'https://www.subdivx.com'
-search_url = f'{base}/index.php?accion=5&buscar={title}&masdesc=&idusuario=&nick=&oxfecha=&oxcd=&oxdown=&pg='
+search_url = f'{base}/index.php'
+
+params = {
+    'accion': 5,
+    'buscar': title,
+    'masdesc': '',
+    'idusuario': '',
+    'nick': '',
+    'oxfecha': '',
+    'oxcd': '',
+    'oxdown': '',
+}
 
 comment_url_re = re.compile(r'popcoment\.php')
 download_url_re = re.compile(r'bajar\.php')
 
-no_results_message = 'No encontramos resultados con el buscador de subdivx'.encode('latin_1')
+no_results_message = 'No encontramos resultados con el buscador de subdivx'
 
 page_n = 1
 while True:
-    with urllib.request.urlopen(f'{search_url}{page_n}') as page:
-        page_content = page.read()
+    params['pg'] = page_n
+    page = requests.get(search_url, params=params)
 
-    if page_n == 1 and no_results_message in page_content:
+    if page_n == 1 and no_results_message in page.text:
         print('No results.')
         break
 
-    soup = bs4.BeautifulSoup(page_content, engine, from_encoding='latin_1')
+    soup = bs4.BeautifulSoup(page.content, engine, from_encoding='latin_1')
 
     if page_n == 1:
         pagination = soup.find('div', class_='pagination')
@@ -61,9 +69,8 @@ while True:
         if not found_in:
             comment_url = detail_section.find('a', href=comment_url_re)
             if comment_url:
-                with urllib.request.urlopen(f'{base}/{comment_url["href"]}') as comment_page:
-                    comment_page_content = comment_page.read()
-                comment_soup = bs4.BeautifulSoup(comment_page_content, engine, from_encoding='latin_1')
+                comment_page = requests.get(f'{base}/{comment_url["href"]}')
+                comment_soup = bs4.BeautifulSoup(comment_page.content, engine, from_encoding='latin_1')
                 for comment in comment_soup.find_all('div', id='pop_upcoment'):
                     if release in comment.contents[0].string.casefold():
                         found_in = 'comments'
