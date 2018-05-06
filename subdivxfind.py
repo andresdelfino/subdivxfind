@@ -15,8 +15,10 @@ class NoResults(Error):
     pass
 
 
-def subdivxfind(title, release):
+def find(title, tag):
     engine = 'html5lib'
+
+    tag = tag.casefold()
 
     base = 'https://www.subdivx.com'
     search_url = f'{base}/index.php'
@@ -66,7 +68,7 @@ def subdivxfind(title, release):
             sub = detail_section.find('div', id='buscador_detalle_sub')
             if sub.string:
                 description = sub.string
-                if release in description.casefold():
+                if tag in description.casefold():
                     found_in = 'description'
             else:
                 description = ''
@@ -77,7 +79,7 @@ def subdivxfind(title, release):
                     comment_page = requests.get(f'{base}/{comment_url["href"]}')
                     comment_soup = bs4.BeautifulSoup(comment_page.content, engine, from_encoding='latin_1')
                     for comment in comment_soup.find_all('div', id='pop_upcoment'):
-                        if release in comment.contents[0].string.casefold():
+                        if tag in comment.contents[0].string.casefold():
                             found_in = 'comments'
                             break
 
@@ -98,29 +100,3 @@ def subdivxfind(title, release):
 
         page_n += 1
 
-
-def main():
-    import sys
-
-    title, release = sys.argv[1:3]
-    release = release.casefold()
-    description_length = 75
-
-    try:
-        for match in subdivxfind(title, release):
-            if len(match.description) > description_length:
-                description = f'{match.description[:description_length - 3]}...'
-
-            print('Title:      ', match.media_title)
-            print('Page:       ', match.page_n)
-            print('URL:        ', match.url)
-            print('Description:', match.description)
-            print('Found in:   ', match.found_in)
-            print('Download:   ', match.download_url)
-            print()
-    except NoResults:
-        print('No results found.')
-
-
-if __name__ == '__main__':
-    main()
