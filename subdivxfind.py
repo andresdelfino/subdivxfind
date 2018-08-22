@@ -86,9 +86,11 @@ def find(title, tag):
             if found_in:
                 match = Match()
 
+                query = "&".join([f"{k}={params[k]}" for k in params])
+
                 match.media_title = media_title
                 match.page_n = page_n
-                match.url = f'{search_url}{page_n}'
+                match.url = f'{search_url}?{query}'
                 match.description = description
                 match.found_in = found_in
                 match.download_url = download_url
