@@ -1,3 +1,4 @@
+import collections
 import re
 
 import bs4
@@ -5,15 +6,9 @@ import html5lib
 import requests
 
 
-class Error(Exception):
-    pass
-
-class Match:
-    pass
-
-class NoResults(Error):
-    pass
-
+Match = collections.namedtuple('Match', ['media_title', 'page_n', 'url',
+                                         'description', 'found_in',
+                                         'download_url'])
 
 def find(title, tag):
     engine = 'html5lib'
@@ -45,7 +40,7 @@ def find(title, tag):
         page = requests.get(search_url, params=params)
 
         if page_n == 1 and no_results_message in page.text:
-            raise NoResults
+            return
 
         soup = bs4.BeautifulSoup(page.content, engine, from_encoding='latin_1')
 
@@ -84,18 +79,10 @@ def find(title, tag):
                             break
 
             if found_in:
-                match = Match()
-
                 query = "&".join([f"{k}={params[k]}" for k in params])
 
-                match.media_title = media_title
-                match.page_n = page_n
-                match.url = f'{search_url}?{query}'
-                match.description = description
-                match.found_in = found_in
-                match.download_url = download_url
-
-                yield match
+                yield Match(media_title, page_n, f'{search_url}?{query}',
+                              description, found_in, download_url)
 
         if page_n == last_page_n:
             break

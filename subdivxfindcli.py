@@ -12,19 +12,23 @@ def main():
 
     description_length = 75
 
-    try:
-        for match in subdivxfind.find(args.title, args.tag):
-            if len(match.description) > description_length:
-                description = f'{match.description[:description_length - 3]}...'
+    matches_found = False
 
-            print('Title:      ', match.media_title)
-            print('Page:       ', match.page_n)
-            print('URL:        ', match.url)
-            print('Description:', match.description)
-            print('Found in:   ', match.found_in)
-            print('Download:   ', match.download_url)
-            print()
-    except subdivxfind.NoResults:
+    for match in subdivxfind.find(args.title, args.tag):
+        matches_found = True
+
+        if len(match.description) > description_length:
+            description = f'{match.description[:description_length - 3]}...'
+
+        print('Title:      ', match.media_title)
+        print('Page:       ', match.page_n)
+        print('URL:        ', match.url)
+        print('Description:', match.description)
+        print('Found in:   ', match.found_in)
+        print('Download:   ', match.download_url)
+        print()
+
+    if not matches_found:
         print('No results found.')
 
 
