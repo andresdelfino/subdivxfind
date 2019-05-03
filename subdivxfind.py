@@ -2,7 +2,6 @@ import collections
 import re
 
 import bs4
-import html5lib
 import requests
 
 
