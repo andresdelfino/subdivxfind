@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import os
 
 import subdivxfind
 
@@ -16,7 +17,9 @@ def main():
 
     matches_found = False
 
-    for match in subdivxfind.find(args.title, args.tag):
+    credentials = os.environ['USERNAME'], os.environ['PASSWORD']
+
+    for match in subdivxfind.find(args.title, args.tag, credentials):
         matches_found = True
 
         if len(match.description) > description_length:
