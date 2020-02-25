@@ -6,7 +6,7 @@ import bs4
 import requests
 
 
-Match = collections.namedtuple('Match', ['media_title', 'page_n', 'url', 'description', 'found_in', 'download_url'])
+Match = collections.namedtuple('Match', ['title', 'url', 'description', 'found_in', 'download_url'])
 
 engine = 'html5lib'
 base = 'https://www.subdivx.com'
@@ -66,7 +66,11 @@ def find(title, tag, strip_year=False):
         for title_section, detail_section in zip(title_list, detail_list):
             found_in = None
 
-            media_title = title_section.find('a').string
+            title_anchor = title_section.find('a')
+
+            url = title_anchor['href']
+
+            media_title = title_anchor.string
             media_title = media_title.replace('Subtitulos de ', '')
 
             if strip_year:
@@ -88,13 +92,13 @@ def find(title, tag, strip_year=False):
             if tag in description.casefold():
                 found_in = 'description'
             else:
-                comment_url = detail_section.find('a', href=comment_url_re)
-                if comment_url and _in_comments(f'{base}/{comment_url["href"]}', tag):
+                comments_url = detail_section.find('a', href=comment_url_re)
+                if comments_url and _in_comments(f'{base}/{comments_url["href"]}', tag):
                     found_in = 'comments'
 
             if found_in:
                 query = urllib.parse.urlencode(params)
-                yield Match(media_title, page_n, f'{search_url}?{query}', description, found_in, download_url)
+                yield Match(media_title, url, description, found_in, download_url)
 
         if page_n == last_page_n:
             break

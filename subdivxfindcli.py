@@ -18,12 +18,11 @@ def main():
     for match in subdivxfind.find(args.title, args.tag, args.strip_year):
         matches_found = True
 
-        print('Title:      ', match.media_title)
-        print('Page:       ', match.page_n)
+        print('Title:      ', match.title)
         print('URL:        ', match.url)
         print('Description:', match.description)
         print('Found in:   ', match.found_in)
-        print('Download:   ', match.download_url)
+        #print('Download:   ', match.download_url)
         print()
 
     if not matches_found:
