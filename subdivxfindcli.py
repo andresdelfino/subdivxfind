@@ -9,18 +9,14 @@ def main():
     parser = argparse.ArgumentParser(description='Find subtitles in subdivx.')
     parser.add_argument('title', help='Media title')
     parser.add_argument('tag', help='Release tag.')
+    parser.add_argument('--strip-year', help='Strip year when searching title.')
 
     args = parser.parse_args()
 
-    description_length = 75
-
     matches_found = False
 
-    for match in subdivxfind.find(args.title, args.tag):
+    for match in subdivxfind.find(args.title, args.tag, args.strip_year):
         matches_found = True
-
-        if len(match.description) > description_length:
-            description = f'{match.description[:description_length - 3]}...'
 
         print('Title:      ', match.media_title)
         print('Page:       ', match.page_n)
@@ -36,4 +32,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
