@@ -30,17 +30,15 @@ def _in_comments(url, tag):
 
 
 def find(title, tag, strip_year=False):
+    title = title.casefold()
     tag = tag.casefold()
 
     params = {
         'accion': 5,
         'buscar': title,
         'masdesc': '',
-        'idusuario': '',
-        'nick': '',
-        'oxfecha': '',
-        'oxcd': '',
-        'oxdown': '',
+        'subtitulos': 1,
+        'realiza_b': 1,
     }
 
     page_n = 1
@@ -72,6 +70,7 @@ def find(title, tag, strip_year=False):
 
             media_title = title_anchor.string
             media_title = media_title.replace('Subtitulos de ', '')
+            media_title = media_title.casefold()
 
             if strip_year:
                 # Remove year from title
