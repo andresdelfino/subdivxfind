@@ -5,101 +5,107 @@ import urllib
 import bs4
 import requests
 
+from constants import (
+    BASE,
+    ENGINE,
+    NO_RESULTS_MESSAGE,
+    SEARCH_URL,
+)
+
 
 Match = collections.namedtuple('Match', ['title', 'url', 'description', 'found_in', 'download_url'])
-
-engine = 'html5lib'
-base = 'https://www.subdivx.com'
-search_url = f'{base}/index.php'
 
 comment_url_re = re.compile(r'popcoment\.php')
 download_url_re = re.compile(r'bajar\.php')
 
-no_results_message = 'No encontramos resultados con el buscador de subdivx'
 
+class Finder:
+    def __init__(self, title, tag, strip_year=False):
+        self.title = title.casefold()
+        self.tag = tag.casefold()
+        self.strip_year = strip_year
 
-def _in_comments(url, tag):
-    comment_page = requests.get(url)
-    comment_soup = bs4.BeautifulSoup(comment_page.content, engine, from_encoding='latin_1')
+    def find(self):
+        params = {
+            'accion': 5,
+            'buscar': self.title,
+            'masdesc': '',
+            'subtitulos': 1,
+            'realiza_b': 1,
+        }
 
-    for comment in comment_soup.find_all('div', id='pop_upcoment'):
-        if tag in comment.contents[0].string.casefold():
-            return True
+        self.session = requests.Session()
 
-    return False
+        page_n = 1
+        while True:
+            params['pg'] = page_n
+            page = self.session.get(SEARCH_URL, params=params)
 
+            if page_n == 1 and NO_RESULTS_MESSAGE in page.text:
+                return
 
-def find(title, tag, strip_year=False):
-    title = title.casefold()
-    tag = tag.casefold()
+            soup = bs4.BeautifulSoup(page.content, ENGINE, from_encoding='latin_1')
 
-    params = {
-        'accion': 5,
-        'buscar': title,
-        'masdesc': '',
-        'subtitulos': 1,
-        'realiza_b': 1,
-    }
+            if page_n == 1:
+                pagination = soup.find('div', class_='pagination')
+                if pagination.contents:
+                    last_page_n = int(pagination.find_all('a')[-2].string)
+                else:
+                    last_page_n = 1
 
-    page_n = 1
-    while True:
-        params['pg'] = page_n
-        page = requests.get(search_url, params=params)
+            title_list = soup.find_all('div', id='menu_detalle_buscador')
+            detail_list = soup.find_all('div', id='buscador_detalle')
 
-        if page_n == 1 and no_results_message in page.text:
-            return
+            for title_section, detail_section in zip(title_list, detail_list):
+                found_in = None
 
-        soup = bs4.BeautifulSoup(page.content, engine, from_encoding='latin_1')
+                title_anchor = title_section.find('a')
 
-        if page_n == 1:
-            pagination = soup.find('div', class_='pagination')
-            if pagination.contents:
-                last_page_n = int(pagination.find_all('a')[-2].string)
-            else:
-                last_page_n = 1
+                url = title_anchor['href']
 
-        title_list = soup.find_all('div', id='menu_detalle_buscador')
-        detail_list = soup.find_all('div', id='buscador_detalle')
+                media_title = title_anchor.string
+                media_title = media_title.replace('Subtitulos de ', '')
+                media_title = media_title.casefold()
 
-        for title_section, detail_section in zip(title_list, detail_list):
-            found_in = None
+                if self.strip_year:
+                    # Remove year from title
+                    media_title = media_title.rsplit('(', maxsplit=1)[0]
+                    media_title = media_title.rstrip()
 
-            title_anchor = title_section.find('a')
+                if self.title not in media_title:
+                    continue
 
-            url = title_anchor['href']
+                # detail_section.find('a', href=download_url_re)['href']
+                download_url = ''
 
-            media_title = title_anchor.string
-            media_title = media_title.replace('Subtitulos de ', '')
-            media_title = media_title.casefold()
+                sub = detail_section.find('div', id='buscador_detalle_sub')
+                if sub.string:
+                    description = sub.string
+                else:
+                    description = ''
 
-            if strip_year:
-                # Remove year from title
-                media_title = media_title.rsplit('(', maxsplit=1)[0]
-                media_title = media_title.rstrip()
+                if self.tag in description.casefold():
+                    found_in = 'description'
+                else:
+                    comments_url = detail_section.find('a', href=comment_url_re)
+                    if comments_url and self._in_comments(f'{BASE}/{comments_url["href"]}'):
+                        found_in = 'comments'
 
-            if title not in media_title:
-                continue
+                if found_in:
+                    query = urllib.parse.urlencode(params)
+                    yield Match(media_title, url, description, found_in, download_url)
 
-            download_url = ''  # detail_section.find('a', href=download_url_re)['href']
+            if page_n == last_page_n:
+                break
 
-            sub = detail_section.find('div', id='buscador_detalle_sub')
-            if sub.string:
-                description = sub.string
-            else:
-                description = ''
+            page_n += 1
 
-            if tag in description.casefold():
-                found_in = 'description'
-            else:
-                comments_url = detail_section.find('a', href=comment_url_re)
-                if comments_url and _in_comments(f'{base}/{comments_url["href"]}', tag):
-                    found_in = 'comments'
+    def _in_comments(self, url):
+        comment_page = self.session.get(url)
+        comment_soup = bs4.BeautifulSoup(comment_page.content, ENGINE, from_encoding='latin_1')
 
-            if found_in:
-                query = urllib.parse.urlencode(params)
-                yield Match(media_title, url, description, found_in, download_url)
+        for comment in comment_soup.find_all('div', id='pop_upcoment'):
+            if self.tag in comment.contents[0].string.casefold():
+                return True
 
-        if page_n == last_page_n:
-            break
-
-        page_n += 1
+        return False

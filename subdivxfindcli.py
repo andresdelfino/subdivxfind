@@ -15,7 +15,9 @@ def main():
 
     matches_found = False
 
-    for match in subdivxfind.find(args.title, args.tag, args.strip_year):
+    finder = subdivxfind.Finder(args.title, args.tag, args.strip_year)
+
+    for match in finder.find():
         matches_found = True
 
         print('Title:      ', match.title)
