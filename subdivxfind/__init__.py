@@ -2,7 +2,7 @@
 
 import argparse
 
-import subdivxfind
+from subdivxfind.finder import Finder
 
 
 def main():
@@ -15,7 +15,7 @@ def main():
 
     matches_found = False
 
-    finder = subdivxfind.Finder(args.title, args.tag, args.strip_year)
+    finder = Finder(args.title, args.tag, args.strip_year)
 
     for match in finder.find():
         matches_found = True
@@ -24,7 +24,6 @@ def main():
         print('URL:        ', match.url)
         print('Description:', match.description)
         print('Found in:   ', match.found_in)
-        #print('Download:   ', match.download_url)
         print()
 
     if not matches_found:

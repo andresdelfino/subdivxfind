@@ -5,7 +5,7 @@ import urllib
 import bs4
 import requests
 
-from constants import (
+from subdivxfind.constants import (
     BASE,
     ENGINE,
     NO_RESULTS_MESSAGE,
@@ -13,15 +13,15 @@ from constants import (
 )
 
 
-Match = collections.namedtuple('Match', ['title', 'url', 'description', 'found_in', 'download_url'])
+Match = collections.namedtuple('Match', ['title', 'url', 'description', 'found_in'])
 
 comment_url_re = re.compile(r'popcoment\.php')
-download_url_re = re.compile(r'bajar\.php')
 
 
 class Finder:
     def __init__(self, title, tag, strip_year=False):
         self.title = title.casefold()
+        self.title = re.sub(' +', ' ', self.title)
         self.tag = tag.casefold()
         self.strip_year = strip_year
 
@@ -72,11 +72,10 @@ class Finder:
                     media_title = media_title.rsplit('(', maxsplit=1)[0]
                     media_title = media_title.rstrip()
 
+                media_title = re.sub(' +', ' ', media_title)
+
                 if self.title not in media_title:
                     continue
-
-                # detail_section.find('a', href=download_url_re)['href']
-                download_url = ''
 
                 sub = detail_section.find('div', id='buscador_detalle_sub')
                 if sub.string:
@@ -93,7 +92,7 @@ class Finder:
 
                 if found_in:
                     query = urllib.parse.urlencode(params)
-                    yield Match(media_title, url, description, found_in, download_url)
+                    yield Match(media_title, url, description, found_in)
 
             if page_n == last_page_n:
                 break
