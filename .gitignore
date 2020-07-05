@@ -1,3 +1,6 @@
-venv
 .gitignore
-__pycache__
+build
+dist
+subdivxfind.egg-info
+
+venv
