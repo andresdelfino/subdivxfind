@@ -8,8 +8,8 @@ from subdivxfind.finder import Finder
 def main():
     parser = argparse.ArgumentParser(description='Find subtitles in subdivx.')
     parser.add_argument('title', help='Media title')
-    parser.add_argument('tag', help='Release tag.')
-    parser.add_argument('--strip-year', help='Strip year when searching title.')
+    parser.add_argument('tag', help='Release tag')
+    parser.add_argument('--strip-year', help='Strip year when searching title')
 
     args = parser.parse_args()
 

@@ -66,13 +66,12 @@ class Finder:
                 media_title = title_anchor.string
                 media_title = media_title.replace('Subtitulos de ', '')
                 media_title = media_title.casefold()
+                media_title = re.sub(' +', ' ', media_title)
 
                 if self.strip_year:
                     # Remove year from title
                     media_title = media_title.rsplit('(', maxsplit=1)[0]
                     media_title = media_title.rstrip()
-
-                media_title = re.sub(' +', ' ', media_title)
 
                 if self.title not in media_title:
                     continue
