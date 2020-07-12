@@ -1,6 +1,6 @@
-import collections
 import re
-import urllib
+
+from typing import Iterator, NamedTuple
 
 import bs4
 import requests
@@ -13,19 +13,24 @@ from subdivxfind.constants import (
 )
 
 
-Match = collections.namedtuple('Match', ['title', 'url', 'description', 'found_in'])
+class Match(NamedTuple):
+    title: str
+    url: str
+    description: str
+    found_in: str
+
 
 comment_url_re = re.compile(r'popcoment\.php')
 
 
 class Finder:
-    def __init__(self, title, tag, strip_year=False):
+    def __init__(self, title: str, tag: str, strip_year: bool = False) -> None:
         self.title = title.casefold()
         self.title = re.sub(' +', ' ', self.title)
         self.tag = tag.casefold()
         self.strip_year = strip_year
 
-    def find(self):
+    def find(self) -> Iterator[Match]:
         params = {
             'accion': 5,
             'buscar': self.title,
@@ -36,22 +41,23 @@ class Finder:
 
         self.session = requests.Session()
 
-        page_n = 1
-        while True:
+        params['pg'] = 1
+        page = self.session.get(SEARCH_URL, params=params)
+        if NO_RESULTS_MESSAGE in page.text:
+            return
+
+        soup = bs4.BeautifulSoup(page.content, ENGINE, from_encoding='latin_1')
+        pagination = soup.find('div', class_='pagination')
+        if pagination.contents:
+            last_page_n = int(pagination.find_all('a')[-2].string)
+        else:
+            last_page_n = 1
+
+        for page_n in range(1, last_page_n + 1):
             params['pg'] = page_n
             page = self.session.get(SEARCH_URL, params=params)
 
-            if page_n == 1 and NO_RESULTS_MESSAGE in page.text:
-                return
-
             soup = bs4.BeautifulSoup(page.content, ENGINE, from_encoding='latin_1')
-
-            if page_n == 1:
-                pagination = soup.find('div', class_='pagination')
-                if pagination.contents:
-                    last_page_n = int(pagination.find_all('a')[-2].string)
-                else:
-                    last_page_n = 1
 
             title_list = soup.find_all('div', id='menu_detalle_buscador')
             detail_list = soup.find_all('div', id='buscador_detalle')
@@ -90,15 +96,9 @@ class Finder:
                         found_in = 'comments'
 
                 if found_in:
-                    query = urllib.parse.urlencode(params)
                     yield Match(media_title, url, description, found_in)
 
-            if page_n == last_page_n:
-                break
-
-            page_n += 1
-
-    def _in_comments(self, url):
+    def _in_comments(self, url: str) -> bool:
         comment_page = self.session.get(url)
         comment_soup = bs4.BeautifulSoup(comment_page.content, ENGINE, from_encoding='latin_1')
 
