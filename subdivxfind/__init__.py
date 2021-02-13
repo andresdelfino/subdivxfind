@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 
 import argparse
+import logging
 
 from subdivxfind.finder import Finder
 
 
 def main() -> None:
+    logging.basicConfig()
+
     parser = argparse.ArgumentParser(description='Find subtitles in subdivx.')
     parser.add_argument('title', help='Media title')
     parser.add_argument('tag', help='Release tag')
