@@ -1,3 +1,4 @@
+import itertools
 import re
 
 from typing import Iterator, NamedTuple
@@ -8,7 +9,6 @@ import requests
 from subdivxfind.constants import (
     BASE,
     ENGINE,
-    NO_RESULTS_MESSAGE,
     SEARCH_URL,
 )
 
@@ -31,31 +31,34 @@ class Finder:
         self.strip_year = strip_year
 
     def find(self) -> Iterator[Match]:
-        params = {
-            'accion': 5,
-            'buscar': self.title,
-            'masdesc': '',
-            'subtitulos': 1,
-            'realiza_b': 1,
-        }
-
         self.session = requests.Session()
 
-        params['pg'] = 1
-        page = self.session.get(SEARCH_URL, params=params)
-        if NO_RESULTS_MESSAGE in page.text:
-            return
+        for page_n in itertools.count(1):
+            if page_n == 1:
+                params = {
+                    'buscar': self.title,
+                    'accion': 5,
+                    'masdesc': '',
+                    'subtitulos': 1,
+                    'realiza_b': 1,
+                }
+            else:
+                params = {
+                    'accion': 5,
+                    'buscar': self.title,
+                    'masdesc': '',
+                    'idusuario': '',
+                    'nick': '',
+                    'oxfecha': '',
+                    'oxcd': '',
+                    'oxdown': '',
+                    'pg': page_n,
+                }
 
-        soup = bs4.BeautifulSoup(page.content, ENGINE, from_encoding='latin_1')
-        pagination = soup.find('div', class_='pagination')
-        if pagination.contents:
-            last_page_n = int(pagination.find_all('a')[-2].string)
-        else:
-            last_page_n = 1
-
-        for page_n in range(1, last_page_n + 1):
-            params['pg'] = page_n
             page = self.session.get(SEARCH_URL, params=params)
+
+            if 'Downloads:' not in page.text:
+                return
 
             soup = bs4.BeautifulSoup(page.content, ENGINE, from_encoding='latin_1')
 
@@ -90,10 +93,8 @@ class Finder:
 
                 if self.tag in description.casefold():
                     found_in = 'description'
-                else:
-                    comments_url = detail_section.find('a', href=comment_url_re)
-                    if comments_url and self._in_comments(f'{BASE}/{comments_url["href"]}'):
-                        found_in = 'comments'
+                elif detail_section.find('a', href=comment_url_re) and self._in_comments(url):
+                    found_in = 'comments'
 
                 if found_in:
                     yield Match(media_title, url, description, found_in)
@@ -102,8 +103,12 @@ class Finder:
         comment_page = self.session.get(url)
         comment_soup = bs4.BeautifulSoup(comment_page.content, ENGINE, from_encoding='latin_1')
 
-        for comment in comment_soup.find_all('div', id='pop_upcoment'):
-            if self.tag in comment.contents[0].string.casefold():
+        for comment in comment_soup.find_all('div', id='detalle_reng_coment1'):
+            comment_string = comment.contents[0].string
+            if comment_string is None:
+                print('error:', url)
+                continue
+            if self.tag in comment_string.casefold():
                 return True
 
         return False
