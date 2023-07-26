@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "subdivxfind"
+version = "0.1.0"
+description = ""
+authors = ["Andrés Delfino <adelfino@gmail.com>"]
+packages = [{include = "subdivxfind"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+bs4 = "*"
+html5lib = "*"
+requests = "*"
+
+[tool.poetry.scripts]
+subdivxfind = "subdivxfind:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
