@@ -14,4 +14,4 @@ subdivx.com returns different content depending on whether the request is made b
 
 * Text is lowercased
 * Periods are replaced with spaces
-* The word "Bluray" is deleted
+* The strings "bluray", "dvd", "dvdrip", "xvid" (among others, presumably) are deleted
