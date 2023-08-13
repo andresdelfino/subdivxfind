@@ -40,30 +40,32 @@ class Finder:
     def find(self) -> Iterator[Match]:
         self.session = requests.Session()
 
+        common = {
+            'accion': 5,
+            'buscar2': self.title,
+            'masdesc': '',
+        }
+
         for page_n in itertools.count(1):
-            params = {
-                'accion': 5,
-                'buscar2': self.title,
-                'masdesc': '',
-            }
+            kwargs = {}
             if page_n == 1:
                 http_method = self.session.post
-                params.update({
+                kwargs['data'] = common | {
                     'realiza_b': 1,
                     'subtitulos': 1,
-                })
+                }
             else:
                 http_method = self.session.get
-                params.update({
+                kwargs['params'] = common | {
                     'idusuario': '',
                     'nick': '',
                     'oxcd': '',
                     'oxdown': '',
                     'oxfecha': '',
                     'pg': page_n,
-                })
+                }
 
-            page = http_method(SEARCH_URL, params=params)
+            page = http_method(SEARCH_URL, **kwargs)
 
             if 'menu_detalle_buscador' not in page.text:
                 return
