@@ -1,5 +1,6 @@
 import itertools
 import logging
+import os
 import re
 
 from typing import (
@@ -39,6 +40,23 @@ class Finder:
 
     def find(self) -> Iterator[Match]:
         self.session = requests.Session()
+
+        self.session.headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0'
+        self.session.get('https://www.subdivx.com/')
+        self.session.get('https://www.subdivx.com/X50', headers={'Referer': 'https://www.subdivx.com/index.php?abandon=1'})
+        response = self.session.post(
+            'https://www.subdivx.com/index.php',
+            data={
+                'usuario': os.environ['SUBDIVX_USERNAME'],
+                'clave': os.environ['SUBDIVX_PASSWORD'],
+                'Enviar': 'Entrar',
+                'accion': '50',
+                'enviau': '1',
+                'refer': 'https://subdivx.com/',
+            },
+            headers={'Referer': 'https://www.subdivx.com/X50'},
+        )
+        assert b'Login' not in response.content
 
         common = {
             'accion': 5,
